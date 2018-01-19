@@ -1,0 +1,11 @@
+[secrets]
+ClientId=
+Password=
+
+[api]
+server=https://api.sbanken.no/bank
+customerDetails=/Customers/api/v1/Customers/{customerId}
+accountList=/Bank/api/v1/Accounts/{customerId}
+accountDetails=/Bank/api/v1/Accounts/{customerId}/{accountNumber}
+transactionList=/Bank/api/v1/Transactions/{customerId}/{accountNumber}
+transferMethod=/Bank/api/v1/Transfers/{customerId}
