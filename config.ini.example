@@ -1,9 +1,13 @@
 [secrets]
-ClientId=
-Password=
+ClientId=<Get this from Sbanken developer panel>
+Password=<Get this from Sbanken developer panel>
+CustomerId=<Your birth number (Fødselsnummer)>
+
+[login]
+identityServer=https://api.sbanken.no/identityserver/connect/token
 
 [api]
-server=https://api.sbanken.no/bank
+baseUrl=https://api.sbanken.no
 customerDetails=/Customers/api/v1/Customers/{customerId}
 accountList=/Bank/api/v1/Accounts/{customerId}
 accountDetails=/Bank/api/v1/Accounts/{customerId}/{accountNumber}
