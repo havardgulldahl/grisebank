@@ -23,16 +23,16 @@ class SbankenClient:
         self.session = OAuth2Session(client=client)
         self.token = self.session.fetch_token(token_url=config.get('login', 'identityServer'), auth=auth)
 
-    def __request(self, endpoint, method='GET', **kwargs):
+    def __request(self, endpoint: str, method='GET', **kwargs):
         'internal method to run request through Oauth session, and return response body or raise error'
         r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), method=method)
         if r.ok:
-            return r.text 
+            return r.json() 
         else:
             raise SbankenError(r)
 
     @property
-    def me(self):
+    def me(self) -> dict:
         'Return details about customer'
         return self.__request('customerDetails', customerId=self.customerId)
 
@@ -40,28 +40,47 @@ class SbankenClient:
         'Return a list of all accounts belonging to customer'
         return self.__request('accountList', customerId=self.customerId)
 
-    def account(self, accountNumber):
+    def account(self, accountNumber: str) -> dict:
         'Return details from one account'
         return self.__request('accountList', customerId=self.customerId, accountNumber=accountNumber)
 
-    def transactions(self, accountNumber):
-        'Return a list of last transactions from an account'
+    def transactions(self, accountNumber: str) -> dict:
+        'This operation returns the latest transactions of the given account within the time span set by the start and end date parameters.'
+        # TODO add options index, length, startDate, endDate
         return self.__request('transactionList', customerId=self.customerId, accountNumber=accountNumber)
 
-    def transfer(self, transferPayload):
-        '''Transfer money between your accounts, according to payload
+    def transfer(self, fromAccount: str, toAccount: str, amount: float, message: str) -> dict:
+        '''Transfer money between your accounts, according to arguments
         
-        {
-            "fromAccount": "string",
-            "toAccount": "string",
-            "message": "string",
-            "amount": 0
+        The details of the transfer to be executed. The fields are as
+        follows: FromAccount: The account number of the account that the
+        amount is to be transferred from, i.e. the debit account. Thisis a
+        numerical string 11 characters long. The account number must be one
+        of the accounts owned by the customer, or an account the customer has
+        been granted access to. FromAccount: The account number of the
+        account that the amount is to be transferred to, i.e. the credit
+        account. This is a numerical string 11 characters long. The account
+        number must be one of the accounts owned by the customer, or an
+        account the customer has been granted access to. Amount: A decimal
+        number representing the amount to be transferred. Must be equal to or
+        greater than 1.00 and less than 100000000000000000.00. Transfers with
+        amounts in excess of the debit account availableamount will fail.
+        Transfer currency is NOK. Message: A description of the transfer.
+        Must be between 1 and 30 characters. The following characters are
+        allowed:
+        "1234567890aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZæÆøØåÅäÄëËïÏöÖüÜÿâÂêÊîÎôÔûÛãÃñÑõÕàÀèÈìÌòÒùÙáÁéÉíÍóÓýÝ,;.:!-/()?",
+        and space. ''' 
+        transferPayload = {
+            'fromAccount': fromAccount,
+            'toAccount': toAccount,
+            'message':message,
+            'amount':amount
         }
-        '''
         r = self.session.post(self.endpoints.get('transferMethod').format(customerId=self.customerId),
-                              data=transferPayload)
+                              json=transferPayload, # transfer as  JSON-Encoded POST/PATCH data
+                              )
         if r.ok:
-            return r.text 
+            return r.json() 
         else:
             raise SbankenError(r)
 
