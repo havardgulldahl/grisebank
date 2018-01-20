@@ -1,7 +1,7 @@
 [secrets]
-ClientId=<Get this from Sbanken developer panel>
-Password=<Get this from Sbanken developer panel>
-CustomerId=<Your birth number (Fødselsnummer)>
+clientId=<Get this from Sbanken developer panel>
+password=<Get this from Sbanken developer panel>
+customerId=<Your birth number (Fødselsnummer)>
 
 [login]
 identityServer=https://api.sbanken.no/identityserver/connect/token

@@ -3,27 +3,82 @@ import requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
+import configparser
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-identityserver = "https://api.sbanken.no/identityserver/connect/token"
+class SbankenError(Exception):
+    pass
 
-def o2(client_id, client_secret):
-    auth = HTTPBasicAuth(client_id, client_secret)
-    client = BackendApplicationClient(client_id=client_id)
-    oauth = OAuth2Session(client=client)
-    token = oauth.fetch_token(token_url=identityserver, auth=auth)
-    return token, oauth, client
+class SbankenClient:
+
+    def __init__(self, config):
+        self.config = config
+        self.customerId = config.get('secrets', 'customerId')
+        self.endpoints = { x:'{baseUrl}{endpoint}'.format(baseUrl=config.get('api', 'baseUrl'), endpoint=config.get('api', x)) for x in config.options('api')}
+        logging.debug('endp: %r', self.endpoints)
+        client_id = config.get('secrets', 'clientId')
+        client_secret = config.get('secrets', 'password')
+        auth = HTTPBasicAuth(client_id, client_secret)
+        client = BackendApplicationClient(client_id=client_id)
+        self.session = OAuth2Session(client=client)
+        self.token = self.session.fetch_token(token_url=config.get('login', 'identityServer'), auth=auth)
+
+    def __request(self, endpoint, method='GET', **kwargs):
+        'internal method to run request through Oauth session, and return response body or raise error'
+        r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), method=method)
+        if r.ok:
+            return r.text 
+        else:
+            raise SbankenError(r)
+
+    @property
+    def me(self):
+        'Return details about customer'
+        return self.__request('customerDetails', customerId=self.customerId)
+
+    def accounts(self):
+        'Return a list of all accounts belonging to customer'
+        return self.__request('accountList', customerId=self.customerId)
+
+    def account(self, accountNumber):
+        'Return details from one account'
+        return self.__request('accountList', customerId=self.customerId, accountNumber=accountNumber)
+
+    def transactions(self, accountNumber):
+        'Return a list of last transactions from an account'
+        return self.__request('transactionList', customerId=self.customerId, accountNumber=accountNumber)
+
+    def transfer(self, transferPayload):
+        '''Transfer money between your accounts, according to payload
+        
+        {
+            "fromAccount": "string",
+            "toAccount": "string",
+            "message": "string",
+            "amount": 0
+        }
+        '''
+        r = self.session.post(self.endpoints.get('transferMethod').format(customerId=self.customerId),
+                              data=transferPayload)
+        if r.ok:
+            return r.text 
+        else:
+            raise SbankenError(r)
 
 if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
     import argparse
 
     parser = argparse.ArgumentParser(description="Grisebank")
     parser.add_argument('--clientId')
     parser.add_argument('--secret')
     parser.add_argument('--userId')
+    parser.add_argument('--configfile', default='config.ini')
 
     args = parser.parse_args()
 
-    o = o2(args.clientId, args.secret)
-    print(o)
+    c = configparser.RawConfigParser()
+    c.optionxform = lambda option: option # make configparser case aware
+    c.read(args.configfile)
+
+    Sbanken = SbankenClient(c)
