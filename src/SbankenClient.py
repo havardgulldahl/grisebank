@@ -1,4 +1,9 @@
+'''A client for Sbanken #openbanking. 
 
+Import into your project and start doing banking from your
+code. 
+
+'''
 import requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
