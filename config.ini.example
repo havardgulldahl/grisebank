@@ -1,3 +1,10 @@
+[accounts]
+# add the account number of where your money is
+BASE=99999999999
+# add as  many accounts that you want, with a name and account number
+Kid1=88888888888
+Kid2=77777777777
+
 [secrets]
 clientId=<Get this from Sbanken developer panel>
 password=<Get this from Sbanken developer panel>
