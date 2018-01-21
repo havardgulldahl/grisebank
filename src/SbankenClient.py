@@ -37,13 +37,14 @@ class SbankenClient:
     def __request(self, endpoint: str, method='GET', **kwargs):
         'internal method to run request through Oauth session, and return response body or raise error'
         r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), method=method)
+
+        #TODO: also add POST with json payload  --- see .transfer()
         if r.ok:  # got HTTP 200
             reply = r.json() 
             if not reply.get('isError'):
                 # no api errors
                 return reply
             # we have an error
-            reply.remove('item')
             raise SbankenError(reply)
         else:
             raise SbankenError(r)
@@ -98,8 +99,13 @@ class SbankenClient:
         r = self.session.post(self.endpoints.get('transferMethod').format(customerId=self.customerId),
                               json=transferPayload, # transfer as  JSON-Encoded POST/PATCH data
                               )
-        if r.ok:
-            return r.json() 
+        if r.ok:  # got HTTP 200
+            reply = r.json() 
+            if not reply.get('isError'):
+                # no api errors
+                return reply
+            # we have an error
+            raise SbankenError(reply)
         else:
             raise SbankenError(r)
 
