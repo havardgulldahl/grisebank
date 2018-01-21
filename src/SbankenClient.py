@@ -39,7 +39,7 @@ class SbankenClient:
         r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), method=method)
         if r.ok:  # got HTTP 200
             reply = r.json() 
-            if reply.get('isError') === False:
+            if reply.get('isError') == False:
                 # no api errors
                 return reply
             # we have an error
