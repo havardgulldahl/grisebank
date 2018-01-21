@@ -15,8 +15,12 @@ logging.basicConfig(level=logging.DEBUG)
 class SbankenError(Exception):
     pass
 
-class SbankenClient:
+class SbankenAccount:
+    'Objectify Sbanken account'
+    # TODO: flesh out this and replace below
 
+
+class SbankenClient:
     def __init__(self, config: configparser.ConfigParser):
         self.config = config
         self.customerId = config.get('secrets', 'customerId')
@@ -49,7 +53,7 @@ class SbankenClient:
 
     def account(self, accountNumber: str) -> dict:
         'Return details from one account'
-        return self.__request('accountList', customerId=self.customerId, accountNumber=accountNumber)
+        return self.__request('accountDetails', customerId=self.customerId, accountNumber=accountNumber)
 
     def transactions(self, accountNumber: str) -> dict:
         'This operation returns the latest transactions of the given account within the time span set by the start and end date parameters.'
