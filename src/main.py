@@ -15,7 +15,7 @@ class GriseUser:
 
     def info(self):
         'Return info on the account'
-        return self.bank.client.account(self.account).get('items')
+        return self.bank.client.account(self.account).get('item')
 
     def latest(self):
         'Return last transactions on the account'
