@@ -37,8 +37,14 @@ class SbankenClient:
     def __request(self, endpoint: str, method='GET', **kwargs):
         'internal method to run request through Oauth session, and return response body or raise error'
         r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), method=method)
-        if r.ok:
-            return r.json() 
+        if r.ok:  # got HTTP 200
+            reply = r.json() 
+            if reply.get('isError') === False:
+                # no api errors
+                return reply
+            # we have an error
+            reply.remove('item')
+            raise SbankenError(reply)
         else:
             raise SbankenError(r)
 
