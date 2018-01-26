@@ -2,7 +2,10 @@
 import configparser 
 import logging
 
-from SbankenClient import SbankenClient, SbankenError, SbankenAccount'
+from SbankenClient import SbankenClient, SbankenError, SbankenAccount
+
+class GriseError(SbankenError):
+    pass
 
 class GriseAccount(SbankenAccount):
     def __init__(self, name:str, account:str, bank:'GriseBank'):
@@ -22,7 +25,7 @@ class GriseBank:
 
     After init, look at 
     `.users` -- a list of GriseAccounts
-    `.baseAccount` -- the base account for all operations
+    `.baseAccount` -- the base account for all operations (the one with all the money that is rewarded)
 
     '''
     def __init__(self, config: configparser.ConfigParser):
@@ -33,10 +36,14 @@ class GriseBank:
 
     def reward(self, receiver:GriseAccount, amount:float, message:str=None) -> dict:
         'Transfer amount to receiver from BASE account, with optional message'
+        if receiver.account == self.baseAccount.account:
+            # can't transfer to itself, the base account never receives money
+            raise GriseError('''You can't reward the base account''')
         return self.client.transfer(self.baseAccount.account, receiver.account, amount, message or 'Rewarded by Grisebank')
 
 if __name__ == '__main__':
     import argparse
+    from pprint import pprint as pr
 
     parser = argparse.ArgumentParser(description="Grisebank")
     parser.add_argument('--configfile', default='config.ini')
