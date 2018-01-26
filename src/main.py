@@ -4,14 +4,14 @@ import logging
 
 from SbankenClient import SbankenClient, SbankenError
 
-class GriseUser:
+class GriseAccount:
     def __init__(self, name:str, account:str, bank:'GriseBank'):
         self.name = name
         self.account = account
         self.bank = bank
 
     def __str__(self) -> str:
-        return '<GriseUser: {}, account # {}>'.format(self.name, self.account)
+        return '<GriseAccount: {}, account # {}>'.format(self.name, self.account)
 
     def info(self) -> dict:
         'Return info on the account'
@@ -33,19 +33,19 @@ class GriseBank:
     for the structure.
 
     After init, look at 
-    `.users` -- a list of GriseUsers
+    `.users` -- a list of GriseAccounts
     `.baseAccount` -- the base account for all operations
 
     '''
     def __init__(self, config: configparser.ConfigParser):
         self.config = config
         self.client = SbankenClient(config)
-        self.users = [GriseUser(opt, config.get('accounts', opt), self) for opt in config.options('accounts') if opt != "BASE"]
-        self.baseAccount = config.get('accounts', 'BASE')
+        self.users = [GriseAccount(opt, config.get('accounts', opt), self) for opt in config.options('accounts') if opt != "BASE"]
+        self.baseAccount = GriseAccount('base', config.get('accounts', 'BASE'))
 
-    def reward(self, receiver:GriseUser, amount:float, message:str=None) -> dict:
+    def reward(self, receiver:GriseAccount, amount:float, message:str=None) -> dict:
         'Transfer amount to receiver from BASE account, with optional message'
-        return self.client.transfer(self.baseAccount, receiver.account, amount, message or 'Rewarded by Grisebank')
+        return self.client.transfer(self.baseAccount.account, receiver.account, amount, message or 'Rewarded by Grisebank')
 
 if __name__ == '__main__':
     import argparse
