@@ -27,11 +27,11 @@ class SbankenAccount:
 
     def info(self) -> dict:
         'Return info on the account'
-        return self.client.account(self.account).get('item')
+        return self.client.account(self).get('item')
 
     def latest(self) -> dict:
         'Return last transactions on the account'
-        return self.client.transactions(self.account).get('items')
+        return self.client.transactions(self).get('items')
 
 class SbankenClient:
     def __init__(self, config: configparser.ConfigParser):
