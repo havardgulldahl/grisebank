@@ -25,6 +25,7 @@ class SbankenClient:
         self.config = config
         self.customerId = config.get('secrets', 'customerId')
         # read all endpoints from config into a dict
+        # TODO make this more explicit
         self.endpoints = { x:'{baseUrl}{endpoint}'.format(baseUrl=config.get('api', 'baseUrl'), endpoint=config.get('api', x)) for x in config.options('api')}
         logging.debug('endp: %r', self.endpoints)
         client_id = config.get('secrets', 'clientId')
@@ -54,7 +55,7 @@ class SbankenClient:
         'Return details about customer'
         return self.__request('customerDetails', customerId=self.customerId)
 
-    def accounts(self):
+    def accounts(self) -> list:
         'Return a list of all accounts belonging to customer'
         return self.__request('accountList', customerId=self.customerId)
 
