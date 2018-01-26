@@ -22,11 +22,21 @@ class GriseUser:
         return self.bank.client.transactions(self.account).get('items')
 
     def reward(self, amount:float) -> bool:
-        "Add amount to user's account"
+        'Add amount to user's account. Returns boolean True if it succeeded.'
         result = self.bank.reward(self, amount)
         return not result.get('isError')
 
 class GriseBank:
+    '''The main class, that binds users and accounts together.
+
+    Pass the constructor an instance of configparser.ConfigParser that holds the setup. See `config.ini.example` 
+    for the structure.
+
+    After init, look at 
+    `.users` -- a list of GriseUsers
+    `.baseAccount` -- the base account for all operations
+
+    '''
     def __init__(self, config: configparser.ConfigParser):
         self.config = config
         self.client = SbankenClient(config)
