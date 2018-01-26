@@ -2,28 +2,16 @@
 import configparser 
 import logging
 
-from SbankenClient import SbankenClient, SbankenError
+from SbankenClient import SbankenClient, SbankenError, SbankenAccount'
 
-class GriseAccount:
+class GriseAccount(SbankenAccount):
     def __init__(self, name:str, account:str, bank:'GriseBank'):
-        self.name = name
-        self.account = account
+        super(GriseAccount, self).__init__(name, account, bank.client)
         self.bank = bank
 
-    def __str__(self) -> str:
-        return '<GriseAccount: {}, account # {}>'.format(self.name, self.account)
-
-    def info(self) -> dict:
-        'Return info on the account'
-        return self.bank.client.account(self.account).get('item')
-
-    def latest(self) -> dict:
-        'Return last transactions on the account'
-        return self.bank.client.transactions(self.account).get('items')
-
-    def reward(self, amount:float) -> bool:
-        'Add amount to user's account. Returns boolean True if it succeeded.'
-        result = self.bank.reward(self, amount)
+    def reward(self, amount:float, message:str=None) -> bool:
+        '''Add amount to user's account. Returns boolean True if it succeeded.'''
+        result = self.bank.reward(self, amount, message)
         return not result.get('isError')
 
 class GriseBank:
@@ -41,7 +29,7 @@ class GriseBank:
         self.config = config
         self.client = SbankenClient(config)
         self.users = [GriseAccount(opt, config.get('accounts', opt), self) for opt in config.options('accounts') if opt != "BASE"]
-        self.baseAccount = GriseAccount('base', config.get('accounts', 'BASE'))
+        self.baseAccount = GriseAccount('base', config.get('accounts', 'BASE'), self)
 
     def reward(self, receiver:GriseAccount, amount:float, message:str=None) -> dict:
         'Transfer amount to receiver from BASE account, with optional message'

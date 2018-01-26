@@ -17,8 +17,21 @@ class SbankenError(Exception):
 
 class SbankenAccount:
     'Objectify Sbanken account'
-    # TODO: flesh out this and replace below
+    def __init__(self, name:str, account:str, client:'SbankenClient'):
+        self.name = name
+        self.account = account
+        self.client = client
 
+    def __str__(self) -> str:
+        return '<SbankenAccount: {}, account # {}>'.format(self.name, self.account)
+
+    def info(self) -> dict:
+        'Return info on the account'
+        return self.client.account(self.account).get('item')
+
+    def latest(self) -> dict:
+        'Return last transactions on the account'
+        return self.client.transactions(self.account).get('items')
 
 class SbankenClient:
     def __init__(self, config: configparser.ConfigParser):
@@ -28,6 +41,7 @@ class SbankenClient:
         # TODO make this more explicit
         self.endpoints = { x:'{baseUrl}{endpoint}'.format(baseUrl=config.get('api', 'baseUrl'), endpoint=config.get('api', x)) for x in config.options('api')}
         logging.debug('endp: %r', self.endpoints)
+        # log in with oauth2 authentication
         client_id = config.get('secrets', 'clientId')
         client_secret = config.get('secrets', 'password')
         auth = HTTPBasicAuth(client_id, client_secret)
@@ -59,16 +73,16 @@ class SbankenClient:
         'Return a list of all accounts belonging to customer'
         return self.__request('accountList', customerId=self.customerId)
 
-    def account(self, accountNumber: str) -> dict:
+    def account(self, account: SbankenAccount) -> dict:
         'Return details from one account'
-        return self.__request('accountDetails', customerId=self.customerId, accountNumber=accountNumber)
+        return self.__request('accountDetails', customerId=self.customerId, accountNumber=account.account)
 
-    def transactions(self, accountNumber: str) -> dict:
+    def transactions(self, account: SbankenAccount) -> dict:
         'This operation returns the latest transactions of the given account within the time span set by the start and end date parameters.'
         # TODO add options index, length, startDate, endDate
-        return self.__request('transactionList', customerId=self.customerId, accountNumber=accountNumber)
+        return self.__request('transactionList', customerId=self.customerId, accountNumber=account.account)
 
-    def transfer(self, fromAccount: str, toAccount: str, amount: float, message: str) -> dict:
+    def transfer(self, fromAccount: SbankenAccount, toAccount: SbankenAccount, amount: float, message: str) -> dict:
         '''Transfer money between your accounts, according to arguments
         
         The details of the transfer to be executed. The fields are as
@@ -92,8 +106,8 @@ class SbankenClient:
         "1234567890aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZæÆøØåÅäÄëËïÏöÖüÜÿâÂêÊîÎôÔûÛãÃñÑõÕàÀèÈìÌòÒùÙáÁéÉíÍóÓýÝ,;.:!-/()?",
         and space. ''' 
         transferPayload = {
-            'fromAccount': fromAccount,
-            'toAccount': toAccount,
+            'fromAccount': fromAccount.account,
+            'toAccount': toAccount.account,
             'message':message,
             'amount':amount
         }
