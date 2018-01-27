@@ -103,13 +103,37 @@ class SbankenUser(jsonobject.JsonObject):
     #                 'country': None,
     #                 'zipCode': ''}
     customerId = jsonobject.StringProperty()
-    dateOfBirth = jsonobject.DateTimeProperty()
+    dateOfBirth = jsonobject.DefaultProperty() # TODO: use DateTimeProperty()
     emailAddress = jsonobject.StringProperty()
     firstName = jsonobject.StringProperty()
     lastName = jsonobject.StringProperty()
     phoneNumbers = jsonobject.ListProperty(SbankenPhoneNumber)
-    postalAddress = jsonobject.DictProperty(SbankenAddress)
-    streetAddress = jsonobject.DictProperty(SbankenAddress)
+    postalAddress = jsonobject.ObjectProperty(SbankenAddress)
+    streetAddress = jsonobject.ObjectProperty(SbankenAddress)
+
+class SbankenTransaction(jsonobject.JsonObject):
+    'Objectify Sbanken Transaction'
+    # properties defined in Sbanken json structs
+    #  {'accountNumber': '', # str
+    # 'accountingDate': '2018-01-22T00:00:00+01:00',
+    # 'amount': 1.5, # float
+    # 'customerId': '', # str, norwegian ssn
+    # 'interestDate': '2018-01-21T00:00:00+01:00',
+    # 'otherAccountNumber': None,
+    # 'registrationDate': None,
+    # 'text': '', # str
+    # 'transactionId': '', # str
+    # 'transactionType': 'RKI'} # one of RKI, 
+    accountNumber = jsonobject.StringProperty()
+    accountingDate = jsonobject.DefaultProperty() # TODO: use DateTimeProperty()
+    amount = jsonobject.FloatProperty()
+    customerId = jsonobject.StringProperty()
+    interestDate = jsonobject.DefaultProperty() # TODO: use DateTimeProperty()
+    otherAccountNumber = jsonobject.StringProperty()
+    registrationDate = jsonobject.DefaultProperty() # TODO: use DateTimeProperty()
+    text = jsonobject.StringProperty()
+    transactionId = jsonobject.StringProperty()
+    transactionType = jsonobject.StringProperty()
 
 class SbankenClient:
     def __init__(self, config: configparser.ConfigParser):
@@ -147,7 +171,7 @@ class SbankenClient:
         'Return details about customer'
         r = self.__request('customerDetails', customerId=self.customerId)
         logging.debug('user:%r', r.get('item'))
-        return SbankenUser(**r.get('item'))
+        return SbankenUser(r.get('item'))
 
     def accounts(self) -> list:
         'Return a list of all accounts, as Account objects, belonging to customer'
@@ -164,7 +188,7 @@ class SbankenClient:
     def transactions(self, account: str) -> dict:
         'This operation returns the latest transactions of the given account within the time span set by the start and end date parameters.'
         # TODO add options index, length, startDate, endDate
-        return self.__request('transactionList', customerId=self.customerId, accountNumber=account).get('items')
+        return [SbankenTransaction(t) for t in self.__request('transactionList', customerId=self.customerId, accountNumber=account).get('items')]
 
     def transfer(self, fromAccount: str, toAccount: str, amount: float, message: str) -> dict:
         '''Transfer money between your accounts, according to arguments
