@@ -4,7 +4,8 @@ Import into your project and start doing banking from your
 code. 
 
 '''
-import requests
+import jsonobject # pip install jsonobject
+import requests   # pip install requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
@@ -15,23 +16,100 @@ logging.basicConfig(level=logging.DEBUG)
 class SbankenError(Exception):
     pass
 
-class SbankenAccount:
+class SbankenAccount(jsonobject.JsonObject):
     'Objectify Sbanken account'
-    def __init__(self, name:str, account:str, client:'SbankenClient'):
-        self.name = name
-        self.account = account
+    # properties defined in Sbanken json structs
+    # {'accountNumber': '', # str
+    # 'accountType': 'Standard account',
+    # 'available': 0.01, # float
+    # 'balance': 0.01, # float
+    # 'creditLimit': 0.0,
+    # 'customerId': '', # str, norwegian ssn
+    # 'defaultAccount': False, # boolean
+    # 'name': '', # str
+    # 'ownerCustomerId': '' # str, norwegian ssn}
+    accountNumber = jsonobject.StringProperty()
+    accountType = jsonobject.StringProperty()
+    available = jsonobject.FloatProperty()
+    balance = jsonobject.FloatProperty()
+    creditLimit = jsonobject.FloatProperty()
+    customerId = jsonobject.StringProperty()
+    defaultAccount = jsonobject.BooleanProperty()
+    name = jsonobject.StringProperty()
+    ownerCustomerId = jsonobject.StringProperty()
+
+class Account:
+    def __init__(self, client:'SbankenClient', accountData:dict):
+        'Init the object with a SbankenClient object and a json dict '
         self.client = client
+        self.details = SbankenAccount(accountData)
 
     def __str__(self) -> str:
-        return '<SbankenAccount: {}, account # {}>'.format(self.name, self.account)
+        return '<Account: {}, account # {}>'.format(self.details.name, self.details.accountNumber)
 
-    def info(self) -> dict:
-        'Return info on the account'
-        return self.client.account(self).get('item')
+    def update(self) -> None:
+        'Get new details from server about balance etc'
+        self.details  = self.client.accountDetails(self.details.accountNumber)
 
-    def latest(self) -> dict:
+    def latest(self) -> list:
         'Return last transactions on the account'
-        return self.client.transactions(self).get('items')
+        return self.client.transactions(self.details.accountNumber)
+
+class SbankenPhoneNumber(jsonobject.JsonObject):
+    'Sbanken Phone Number object'
+    #                 {'countryCode': '', 'number': ''}], 
+    countryCode = jsonobject.StringProperty()
+    number = jsonobject.StringProperty()
+
+class SbankenAddress(jsonobject.JsonObject):
+    'Sbanken Address object'
+    #{'addressLine1': '',
+    #                 'addressLine2': '',
+    #                 'addressLine3': '', 
+    #                 'addressLine4': '', 
+    #                 'city': None,
+    #                 'country': '',
+    #                 'zipCode': None},
+    addressLine1 = jsonobject.StringProperty()
+    addressLine2 = jsonobject.StringProperty()
+    addressLine3 = jsonobject.StringProperty()
+    addressLine4 = jsonobject.StringProperty()
+    city = jsonobject.StringProperty()
+    country = jsonobject.StringProperty()
+    zipCode = jsonobject.StringProperty()
+
+class SbankenUser(jsonobject.JsonObject):
+    'Objectify Sbanken User'
+    # properties defined in Sbanken json structs
+    # {'customerId': '', # str, norwegian ssn
+    # 'dateOfBirth': 'YYYY-MM-DDT00:00:00', # str, timestamp 
+    # 'emailAddress': '', # str, email
+    # 'firstName': '', # str
+    # 'lastName': '', # str
+    # 'phoneNumbers': [{'countryCode': '', 'number': ''},
+    #                 {'countryCode': '', 'number': ''}],
+    # 'postalAddress': {'addressLine1': '',
+    #                 'addressLine2': '',
+    #                 'addressLine3': '', 
+    #                 'addressLine4': '', 
+    #                 'city': None,
+    #                 'country': '',
+    #                 'zipCode': None},
+    # 'streetAddress': {'addressLine1': '',
+    #                 'addressLine2': '',
+    #                 'addressLine3': None,
+    #                 'addressLine4': None,
+    #                 'city': '',
+    #                 'country': None,
+    #                 'zipCode': ''}
+    customerId = jsonobject.StringProperty()
+    dateOfBirth = jsonobject.DateTimeProperty()
+    emailAddress = jsonobject.StringProperty()
+    firstName = jsonobject.StringProperty()
+    lastName = jsonobject.StringProperty()
+    phoneNumbers = jsonobject.ListProperty(SbankenPhoneNumber)
+    postalAddress = jsonobject.DictProperty(SbankenAddress)
+    streetAddress = jsonobject.DictProperty(SbankenAddress)
 
 class SbankenClient:
     def __init__(self, config: configparser.ConfigParser):
@@ -67,22 +145,28 @@ class SbankenClient:
     @property
     def me(self) -> dict:
         'Return details about customer'
-        return self.__request('customerDetails', customerId=self.customerId)
+        r = self.__request('customerDetails', customerId=self.customerId)
+        logging.debug('user:%r', r.get('item'))
+        return SbankenUser(**r.get('item'))
 
     def accounts(self) -> list:
-        'Return a list of all accounts belonging to customer'
-        return self.__request('accountList', customerId=self.customerId)
+        'Return a list of all accounts, as Account objects, belonging to customer'
+        r = []
+        for acct in self.__request('accountList', customerId=self.customerId).get('items'):
+            r.append(Account(self, acct))
+        return r
 
-    def account(self, account: SbankenAccount) -> dict:
+    def accountDetails(self, account: str) -> SbankenAccount:
         'Return details from one account'
-        return self.__request('accountDetails', customerId=self.customerId, accountNumber=account.account)
+        r = self.__request('accountDetails', customerId=self.customerId, accountNumber=account)
+        return SbankenAccount(r.get('item'))
 
-    def transactions(self, account: SbankenAccount) -> dict:
+    def transactions(self, account: str) -> dict:
         'This operation returns the latest transactions of the given account within the time span set by the start and end date parameters.'
         # TODO add options index, length, startDate, endDate
-        return self.__request('transactionList', customerId=self.customerId, accountNumber=account.account)
+        return self.__request('transactionList', customerId=self.customerId, accountNumber=account).get('items')
 
-    def transfer(self, fromAccount: SbankenAccount, toAccount: SbankenAccount, amount: float, message: str) -> dict:
+    def transfer(self, fromAccount: str, toAccount: str, amount: float, message: str) -> dict:
         '''Transfer money between your accounts, according to arguments
         
         The details of the transfer to be executed. The fields are as
@@ -106,8 +190,8 @@ class SbankenClient:
         "1234567890aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZæÆøØåÅäÄëËïÏöÖüÜÿâÂêÊîÎôÔûÛãÃñÑõÕàÀèÈìÌòÒùÙáÁéÉíÍóÓýÝ,;.:!-/()?",
         and space. ''' 
         transferPayload = {
-            'fromAccount': fromAccount.account,
-            'toAccount': toAccount.account,
+            'fromAccount': fromAccount,
+            'toAccount': toAccount,
             'message':message,
             'amount':amount
         }
