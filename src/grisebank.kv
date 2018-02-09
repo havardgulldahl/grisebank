@@ -1,0 +1,38 @@
+#:kivy 1.0.9
+
+<GriseBank>:    
+    canvas:
+        Rectangle:
+            pos: 5, 0
+            size: 10, self.height
+            
+    Label:
+        font_size: 70  
+        center_x: root.width / 4
+        top: root.top - 50
+        text: "Konto:"
+    Label:
+        font_size: 70  
+        center_x: root.width * 3 / 4
+        top: root.top -50
+        text: str(root.accountName)
+
+    Label:
+        font_size: 70  
+        center_x: root.width / 4
+        top: root.top * 2 / 4
+        text: "Saldo:"
+    Label:
+        font_size: 70  
+        center_x: root.width * 3 / 4
+        top: root.top * 2 / 4
+        text: str(root.accountValue) + " kr"
+
+    Label:
+        font_size: 70  
+        center_x: root.width / 2
+        top: root.top / 4
+        text: str(root.status)
+        markup: True
+        color: 0.22,0.23,0.44,1
+
