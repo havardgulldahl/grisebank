@@ -6,6 +6,10 @@ from kivy.clock import Clock
 
 from pitftscreen import PiTFT_Screen 
 
+import configparser
+
+import bank
+
 class GriseBank(Widget):
     accountName = StringProperty("Ingen")
     accountValue = NumericProperty(0.0)
@@ -35,15 +39,33 @@ class GriseBankApp(App):
     def setScreen(self, screen):
         self.screen = screen
 
+    def setBank(self, bank):
+        self.bank = bank
+
     def build(self):
         self.gris = GriseBank()
         self.gris.setScreen(self.screen)
+        self.gris.setBank(self.bank)
         Clock.schedule_interval(self.gris.update, 1.0/60.0)
         return self.gris
 
-
 if __name__ == '__main__':
+    import argparse
+    from pprint import pprint as pr
+
+    parser = argparse.ArgumentParser(description="Grisebank")
+    parser.add_argument('configfile', default='config.ini')
+
+    args = parser.parse_args()
+
+    c = configparser.RawConfigParser()
+    c.optionxform = lambda option: option # make configparser case aware
+    c.read(args.configfile)
+
+    sbank = bank.GriseBank(c)
+
     gapp = GriseBankApp()
     pitft = PiTFT_Screen()
     gapp.setScreen(pitft)
+    gapp.setBank(sbank)
     gapp.run()
