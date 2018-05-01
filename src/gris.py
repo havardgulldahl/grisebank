@@ -19,21 +19,33 @@ class GriseBank(Widget):
         'update stuff'
 
     def setScreen(self, screen):
-        #screen.Button1Interrupt(lambda x: self.button(1, x))
+        screen.Button1Interrupt(lambda x: self.button(1, x))
         screen.Button2Interrupt(lambda x: self.button(2, x))
         screen.Button3Interrupt(lambda x: self.button(3, x))
         screen.Button4Interrupt(lambda x: self.button(4, x))
+        screen.Backlight(True)
         self.screen = screen
 
-    def button(self, btnNumber, channel):
-        print('pressed button {}, channel {}'.format(btnNumber, channel))
-        if btnNumber == 2:
+    def button(self, btnNumber:int, channel:int):
+        print('pressed button {}, gpio channel {}'.format(btnNumber, channel))
+        if btnNumber == 1:
             self.accountName = "Bjarne"
             self.accountValue = 20 
-        elif btnNumber == 3:
+        elif btnNumber == 2:
             self.accountName = "Anna"
             self.accountValue = 50 
+        elif btnNumber == 3:
+            self.accountName = "Cecilie"
+            self.accountValue = 92 
+        elif btnNumber == 4:
+            self.accountName = "David"
+            self.accountValue = -1 
         self.status = "Skann kortet..."
+
+    def scan(self, cardId):
+        'scaning rfid card'
+        print ('scanning rfid card')
+
 
 class GriseBankApp(App):
     def setScreen(self, screen):
@@ -45,7 +57,6 @@ class GriseBankApp(App):
     def build(self):
         self.gris = GriseBank()
         self.gris.setScreen(self.screen)
-        self.gris.setBank(self.bank)
         Clock.schedule_interval(self.gris.update, 1.0/60.0)
         return self.gris
 

@@ -44,10 +44,14 @@ class PiTFT_Screen(object):
         self.__b2 = False
         self.__b3 = False
         self.__b4 = False
-        self.__pin1 = 23
-        self.__pin2 = 22
-        self.__pin3 = 27
-        self.__pin4 = 18
+        #self.__pin1 = 23
+        #self.__pin2 = 22
+        #self.__pin3 = 27
+        #self.__pin4 = 18
+        self.__pin1 = 22 
+        self.__pin2 = 17
+        self.__pin3 = 21
+        self.__pin4 = 27
 
         # set GPIO mode
         GPIO.setmode(GPIO.BCM)
