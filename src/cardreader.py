@@ -7,7 +7,17 @@ import sys
 from pirc522 import RFID
 
 run = True
-rdr = RFID(device=1, pin_ce=0, pin_rst=37, pin_irq=29)
+#rdr = RFID(bus=1, device=0, pin_irq=32, pin_rst=22)
+rdr = RFID(bus=1, device=0, pin_ce=12, pin_irq=32, pin_rst=22)
+# this works by 3. jun 5 pm
+# rdr = RFID(bus=1, device=0, pin_ce=12, pin_irq=32, pin_rst=22)
+# SDA = BOARD12
+# SCK = BOARD40
+# MOSI = BOARD38
+# MISO = BOARD35
+# IRQ = BOARD32
+# RST = BOARD22
+
 util = rdr.util()
 util.debug = True
 
@@ -25,6 +35,7 @@ while run:
     rdr.wait_for_tag()
 
     (error, data) = rdr.request()
+    print(error)
     if not error:
         print("\nDetected: " + format(data, "02x"))
 
