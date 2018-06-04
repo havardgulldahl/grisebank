@@ -1,5 +1,3 @@
-from pprint import pprint as pr
-
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
@@ -7,11 +5,10 @@ from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.logger import Logger
 
-from threading import Thread
-from multiprocessing import Process
-
 from pitftscreen import PiTFT_Screen 
 from pirc522 import RFID # pip install pirc522
+
+import yaml # pip install PyYAML
 
 import configparser
 
@@ -36,7 +33,7 @@ class GriseBank(Widget):
 
     def setAccounts(self, accounts:[]):
         print("setting accounts")
-        pr(accounts)
+        #pr(accounts)
         self.accounts = accounts
 
     def button(self, btnNumber:int, channel:int):
@@ -60,13 +57,15 @@ class GriseBank(Widget):
             self.accountValue = -1 
         self.status = "Skann kortet..."
 
-    def scan(self, cardId):
+    def scan(self, card):
         'scaning rfid card'
-        print ('scanning rfid card')
+        Logger.debug ('scanning rfid card: %s', card)
+        self.status = card.name or card.hex
+        if card.reward > 0:
+            Logger.info("Rewarding %s based on card", card.reward)
 
     def on_stop(self):
         Logger.debug("on_stop")
-
 
 class GriseBankApp(App):
     def setScreen(self, screen):
@@ -74,6 +73,9 @@ class GriseBankApp(App):
 
     def setBank(self, bank):
         self.bank = bank
+
+    def setCards(self, cards):
+        self.cards = cards
 
     def build(self):
         self.gris = GriseBank()
@@ -92,10 +94,29 @@ class GriseBankApp(App):
         self.gris.on_stop()
         self.RFID.on_stop()
 
-    def on_rfid_card(self, uid):
+    def on_rfid_card(self, card):
         'this is run when a new card is read'
+        Logger.info('rfid card read: %r', card)
+        # look for card in known cards list
+        for c in self.cards:
+            if c['hex'] == card.hex:
+                # we know it
+                card.name = c['name']
+                card.reward = c['reward']
 
-        Logger.info('rfid card read: %r', uid)
+        self.gris.scan(card)
+
+class RFIDCard:
+    'Model for rfid (mifare rc522) cards or tags'
+
+    def __init__(self, uid):
+        self.uid = uid
+        self.hex = ''.join('{:02X}'.format(a) for a in uid)
+        self.name = None # set later
+        self.reward = -1 # set later
+
+    def __str__(self):
+        return '<RFIDCard: {} ({})>'.format(self.hex, self.name)
 
 class RFIDReader:
 
@@ -116,7 +137,7 @@ class RFIDReader:
         self.rdr = RFID(bus=1, device=0, pin_ce=12, pin_irq=32, pin_rst=15)
         util = self.rdr.util()
         util.debug = True
-        self.callbackfn = callback_new_rfid_fn # call this function on new card detected
+        self.callbackfn = callback_new_rfid_fn # call this function with a RFIDCard() on new card detected
         # TODO: use kivy events https://kivy.org/docs/guide/events.html
         self.last_card = None # to filter out duplicates
 
@@ -130,7 +151,7 @@ class RFIDReader:
             # duplicate
             return
         self.last_card = uid
-        self.callbackfn(uid)
+        self.callbackfn(RFIDCard(uid))
 
     def update(self, dt):
         'check if we have a new card nearby. Run this periodically'
@@ -152,12 +173,17 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Grisebank")
     parser.add_argument('configfile', default='config.ini')
+    parser.add_argument('cardsfile', default='cards.yaml')
 
     args = parser.parse_args()
 
-    c = configparser.RawConfigParser()
+    c = configparser.RawConfigParser() 
     c.optionxform = lambda option: option # make configparser case aware
     c.read(args.configfile)
+
+
+    cards = yaml.safe_load(open(args.cardsfile))
+    Logger.info('%i rfid card definitions loaded', len(cards))
 
     sbank = bank.GriseBank(c)
 
@@ -168,4 +194,5 @@ if __name__ == '__main__':
     pitft = PiTFT_Screen()
     gapp.setScreen(pitft)
     gapp.setBank(sbank)
+    gapp.setCards(cards)
     gapp.run()

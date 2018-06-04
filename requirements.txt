@@ -1,3 +1,7 @@
 requests
 requests-oauthlib
 jsonobject
+kivy
+pirc522
+pyyaml
+
