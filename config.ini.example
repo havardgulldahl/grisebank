@@ -15,8 +15,8 @@ identityServer=https://api.sbanken.no/identityserver/connect/token
 
 [api]
 baseUrl=https://api.sbanken.no
-customerDetails=/Customers/api/v1/Customers/{customerId}
-accountList=/Bank/api/v1/Accounts/{customerId}
-accountDetails=/Bank/api/v1/Accounts/{customerId}/{accountNumber}
-transactionList=/Bank/api/v1/Transactions/{customerId}/{accountNumber}
-transferMethod=/Bank/api/v1/Transfers/{customerId}
+customerDetails=/customers/api/v1/Customers/
+accountList=/bank/api/v1/Accounts/
+accountDetails=/bank/api/v1/Accounts/{accountNumber}
+transactionList=/bank/api/v1/Transactions/{accountNumber}
+transferMethod=/bank/api/v1/Transfers/
