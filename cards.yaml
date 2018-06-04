@@ -1,0 +1,22 @@
+# add all the cards you want to recognize here. format:
+#
+# -
+#   name: 2kr                   # the name of the card
+#   reward: 2                   # the amount of money to reward when this card is scanned
+#   hex: E65AF2307E             # the unique id of the card (scan an unknown card to get it the first time)
+
+- 
+  name: 2kr 
+  reward: 2
+  hex: 953B222BA7
+
+- 
+  name: bluetag
+  reward: 5
+  hex: E65AF2307E
+
+- 
+  name: bratteklar
+  reward: 10
+  hex: 3130EF759B
+
