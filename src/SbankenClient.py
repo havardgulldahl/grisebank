@@ -9,6 +9,7 @@ import requests   # pip install requests
 from requests.auth import HTTPBasicAuth
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
+from urllib.parse import quote
 import logging
 import configparser
 logging.basicConfig(level=logging.DEBUG)
@@ -140,20 +141,29 @@ class SbankenClient:
         self.config = config
         self.customerId = config.get('secrets', 'customerId')
         # read all endpoints from config into a dict
-        # TODO make this more explicit
+        # TODO make this more readable
         self.endpoints = { x:'{baseUrl}{endpoint}'.format(baseUrl=config.get('api', 'baseUrl'), endpoint=config.get('api', x)) for x in config.options('api')}
         logging.debug('endp: %r', self.endpoints)
         # log in with oauth2 authentication
-        client_id = config.get('secrets', 'clientId')
-        client_secret = config.get('secrets', 'password')
-        auth = HTTPBasicAuth(client_id, client_secret)
+        client_id = quote(config.get('secrets', 'clientId'))
+        client_secret = quote(config.get('secrets', 'password'))
+        self.auth = HTTPBasicAuth(client_id, client_secret)
         client = BackendApplicationClient(client_id=client_id)
         self.session = OAuth2Session(client=client)
-        self.token = self.session.fetch_token(token_url=config.get('login', 'identityServer'), auth=auth)
+        self.fetch_token()
 
-    def __request(self, endpoint: str, method='GET', **kwargs):
+    def fetch_token(self):
+        self.token = self.session.fetch_token(token_url=self.config.get('login', 'identityServer'), 
+                                              auth=self.auth)
+
+    def __request(self, endpoint: str, method='GET', customerId=None, **kwargs):
         'internal method to run request through Oauth session, and return response body or raise error'
-        r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), method=method)
+        headers = {'User-Agent':'grisebank@lurtgjort.no'}
+        if customerId is None:
+            raise SbankenError('Need customerId for transaction')
+        r = self.session.request(url=self.endpoints.get(endpoint).format(**kwargs), 
+                                 method=method,
+                                 headers={'customerId':customerId})
 
         #TODO: also add POST with json payload  --- see .transfer()
         if r.ok:  # got HTTP 200
