@@ -25,7 +25,7 @@ from os.path import exists
 
 class PiTFT_Screen(object):
 
-    def __init__(self, v2 = True, buttons = [True, True, True, True]):
+    def __init__(self, v2 = True, buttons = [False, False, False, False]):
         '''Initialise class.
 
         v2 = True - if using older (v1) revision of board this should be
@@ -48,13 +48,15 @@ class PiTFT_Screen(object):
         #self.__pin2 = 22
         #self.__pin3 = 27
         #self.__pin4 = 18
-        self.__pin1 = 22 
-        self.__pin2 = 17
-        self.__pin3 = 21
-        self.__pin4 = 27
+        # invalid channels: 27
+        # failed to add edge detection: 22
+        self.__pin1 = 23 
+        self.__pin2 = 21
+        self.__pin3 = 29
+        self.__pin4 = 37
 
         # set GPIO mode
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD) # GPIO.BOARD | GPIO.BCM
 
 
         # Initialise buttons
